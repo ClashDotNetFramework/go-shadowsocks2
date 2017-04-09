@@ -43,6 +43,7 @@ func tcpLocal(addr, server string, ciph core.StreamConnCipher, getAddr func(net.
 
 		go func() {
 			defer c.Close()
+			c.(*net.TCPConn).SetKeepAlive(true)
 
 			tgt, err := getAddr(c)
 			if err != nil {
@@ -56,6 +57,7 @@ func tcpLocal(addr, server string, ciph core.StreamConnCipher, getAddr func(net.
 				return
 			}
 			defer rc.Close()
+			rc.(*net.TCPConn).SetKeepAlive(true)
 
 			if _, err = rc.Write(tgt); err != nil {
 				logf("failed to send target address: %v", err)
@@ -92,6 +94,7 @@ func tcpRemote(addr string, ciph core.StreamConnCipher) {
 
 		go func() {
 			defer c.Close()
+			c.(*net.TCPConn).SetKeepAlive(true)
 
 			tgt, err := socks.ReadAddr(c)
 			if err != nil {
@@ -105,6 +108,7 @@ func tcpRemote(addr string, ciph core.StreamConnCipher) {
 				return
 			}
 			defer rc.Close()
+			rc.(*net.TCPConn).SetKeepAlive(true)
 
 			logf("proxy %s <-> %s", c.RemoteAddr(), tgt)
 			_, _, err = relay(c, rc)
