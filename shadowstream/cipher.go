@@ -119,7 +119,7 @@ func (k chacha20key) IVSize() int {
 	return chacha.NonceSize
 }
 func (k chacha20key) Encrypter(iv []byte) cipher.Stream {
-	c, _ := chacha20.NewCipher(k, iv)
+	c, _ := chacha20.NewCipher(iv, k)
 	return c
 }
 func (k chacha20key) Decrypter(iv []byte) cipher.Stream {
