@@ -7,8 +7,7 @@ import (
 	"crypto/rc4"
 	"strconv"
 
-	"github.com/aead/chacha20"
-	"github.com/aead/chacha20/chacha"
+	"golang.org/x/crypto/chacha20"
 )
 
 // Cipher generates a pair of stream ciphers for encryption and decryption.
@@ -57,10 +56,10 @@ func AESCFB(key []byte) (Cipher, error) {
 // IETF-variant of chacha20
 type chacha20ietfkey []byte
 
-func (k chacha20ietfkey) IVSize() int                       { return chacha.INonceSize }
+func (k chacha20ietfkey) IVSize() int                       { return chacha20.NonceSize }
 func (k chacha20ietfkey) Decrypter(iv []byte) cipher.Stream { return k.Encrypter(iv) }
 func (k chacha20ietfkey) Encrypter(iv []byte) cipher.Stream {
-	ciph, err := chacha20.NewCipher(iv, k)
+	ciph, err := chacha20.NewUnauthenticatedCipher(k, iv)
 	if err != nil {
 		panic(err) // should never happen
 	}
@@ -68,18 +67,18 @@ func (k chacha20ietfkey) Encrypter(iv []byte) cipher.Stream {
 }
 
 func Chacha20IETF(key []byte) (Cipher, error) {
-	if len(key) != chacha.KeySize {
-		return nil, KeySizeError(chacha.KeySize)
+	if len(key) != chacha20.KeySize {
+		return nil, KeySizeError(chacha20.KeySize)
 	}
 	return chacha20ietfkey(key), nil
 }
 
 type xchacha20key []byte
 
-func (k xchacha20key) IVSize() int                       { return chacha.XNonceSize }
+func (k xchacha20key) IVSize() int                       { return chacha20.NonceSizeX }
 func (k xchacha20key) Decrypter(iv []byte) cipher.Stream { return k.Encrypter(iv) }
 func (k xchacha20key) Encrypter(iv []byte) cipher.Stream {
-	ciph, err := chacha20.NewCipher(iv, k)
+	ciph, err := chacha20.NewUnauthenticatedCipher(k, iv)
 	if err != nil {
 		panic(err) // should never happen
 	}
@@ -87,8 +86,8 @@ func (k xchacha20key) Encrypter(iv []byte) cipher.Stream {
 }
 
 func Xchacha20(key []byte) (Cipher, error) {
-	if len(key) != chacha.KeySize {
-		return nil, KeySizeError(chacha.KeySize)
+	if len(key) != chacha20.KeySize {
+		return nil, KeySizeError(chacha20.KeySize)
 	}
 	return xchacha20key(key), nil
 }
@@ -111,20 +110,4 @@ func (k rc4Md5Key) Decrypter(iv []byte) cipher.Stream {
 }
 func RC4MD5(key []byte) (Cipher, error) {
 	return rc4Md5Key(key), nil
-}
-
-type chacha20key []byte
-
-func (k chacha20key) IVSize() int {
-	return chacha.NonceSize
-}
-func (k chacha20key) Encrypter(iv []byte) cipher.Stream {
-	c, _ := chacha20.NewCipher(iv, k)
-	return c
-}
-func (k chacha20key) Decrypter(iv []byte) cipher.Stream {
-	return k.Encrypter(iv)
-}
-func ChaCha20(key []byte) (Cipher, error) {
-	return chacha20key(key), nil
 }
