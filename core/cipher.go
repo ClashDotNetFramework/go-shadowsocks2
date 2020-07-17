@@ -97,40 +97,48 @@ func PickCipher(name string, key []byte, password string) (Cipher, error) {
 
 	if choice, ok := aeadList[name]; ok {
 		if len(key) == 0 {
-			key = kdf(password, choice.KeySize)
+			key = Kdf(password, choice.KeySize)
 		}
 		if len(key) != choice.KeySize {
 			return nil, shadowaead.KeySizeError(choice.KeySize)
 		}
 		aead, err := choice.New(key)
-		return &aeadCipher{aead}, err
+		return &AeadCipher{Cipher: aead, Key: key}, err
 	}
 
 	if choice, ok := streamList[name]; ok {
 		if len(key) == 0 {
-			key = kdf(password, choice.KeySize)
+			key = Kdf(password, choice.KeySize)
 		}
 		if len(key) != choice.KeySize {
 			return nil, shadowstream.KeySizeError(choice.KeySize)
 		}
 		ciph, err := choice.New(key)
-		return &streamCipher{ciph}, err
+		return &StreamCipher{Cipher: ciph, Key: key}, err
 	}
 
 	return nil, ErrCipherNotSupported
 }
 
-type aeadCipher struct{ shadowaead.Cipher }
+type AeadCipher struct {
+	shadowaead.Cipher
 
-func (aead *aeadCipher) StreamConn(c net.Conn) net.Conn { return shadowaead.NewConn(c, aead) }
-func (aead *aeadCipher) PacketConn(c net.PacketConn) net.PacketConn {
+	Key []byte
+}
+
+func (aead *AeadCipher) StreamConn(c net.Conn) net.Conn { return shadowaead.NewConn(c, aead) }
+func (aead *AeadCipher) PacketConn(c net.PacketConn) net.PacketConn {
 	return shadowaead.NewPacketConn(c, aead)
 }
 
-type streamCipher struct{ shadowstream.Cipher }
+type StreamCipher struct {
+	shadowstream.Cipher
 
-func (ciph *streamCipher) StreamConn(c net.Conn) net.Conn { return shadowstream.NewConn(c, ciph) }
-func (ciph *streamCipher) PacketConn(c net.PacketConn) net.PacketConn {
+	Key []byte
+}
+
+func (ciph *StreamCipher) StreamConn(c net.Conn) net.Conn { return shadowstream.NewConn(c, ciph) }
+func (ciph *StreamCipher) PacketConn(c net.PacketConn) net.PacketConn {
 	return shadowstream.NewPacketConn(c, ciph)
 }
 
@@ -142,7 +150,7 @@ func (dummy) StreamConn(c net.Conn) net.Conn             { return c }
 func (dummy) PacketConn(c net.PacketConn) net.PacketConn { return c }
 
 // key-derivation function from original Shadowsocks
-func kdf(password string, keyLen int) []byte {
+func Kdf(password string, keyLen int) []byte {
 	var b, prev []byte
 	h := md5.New()
 	for len(b) < keyLen {

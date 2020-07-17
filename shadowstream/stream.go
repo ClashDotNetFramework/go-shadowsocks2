@@ -94,8 +94,10 @@ func (r *Reader) WriteTo(w io.Writer) (n int64, err error) {
 type Conn struct {
 	net.Conn
 	Cipher
-	r *Reader
-	w *Writer
+	r       *Reader
+	w       *Writer
+	readIV  []byte
+	writeIV []byte
 }
 
 // NewConn wraps a stream-oriented net.Conn with stream cipher encryption/decryption.
@@ -103,8 +105,8 @@ func NewConn(c net.Conn, ciph Cipher) *Conn { return &Conn{Conn: c, Cipher: ciph
 
 func (c *Conn) initReader() error {
 	if c.r == nil {
-		iv := make([]byte, c.IVSize())
-		if _, err := io.ReadFull(c.Conn, iv); err != nil {
+		iv, err := c.ObtainReadIV()
+		if err != nil {
 			return err
 		}
 		c.r = NewReader(c.Conn, c.Decrypter(iv))
@@ -132,8 +134,8 @@ func (c *Conn) WriteTo(w io.Writer) (int64, error) {
 
 func (c *Conn) initWriter() error {
 	if c.w == nil {
-		iv := make([]byte, c.IVSize())
-		if _, err := rand.Read(iv); err != nil {
+		iv, err := c.ObtainWriteIV()
+		if err != nil {
 			return err
 		}
 		if _, err := c.Conn.Write(iv); err != nil {
@@ -160,4 +162,36 @@ func (c *Conn) ReadFrom(r io.Reader) (int64, error) {
 		}
 	}
 	return c.w.ReadFrom(r)
+}
+
+func (c *Conn) ObtainWriteIV() ([]byte, error) {
+	if len(c.writeIV) == c.IVSize() {
+		return c.writeIV, nil
+	}
+
+	iv := make([]byte, c.IVSize())
+
+	if _, err := rand.Read(iv); err != nil {
+		return nil, err
+	}
+
+	c.writeIV = iv
+
+	return iv, nil
+}
+
+func (c *Conn) ObtainReadIV() ([]byte, error) {
+	if len(c.readIV) == c.IVSize() {
+		return c.readIV, nil
+	}
+
+	iv := make([]byte, c.IVSize())
+
+	if _, err := io.ReadFull(c.Conn, iv); err != nil {
+		return nil, err
+	}
+
+	c.readIV = iv
+
+	return iv, nil
 }
