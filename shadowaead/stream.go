@@ -3,6 +3,7 @@ package shadowaead
 import (
 	"crypto/cipher"
 	"crypto/rand"
+	"errors"
 	"io"
 	"net"
 	"sync"
@@ -14,7 +15,11 @@ const (
 	bufSize         = 17 * 1024 // >= 2+aead.Overhead()+payloadSizeMask+aead.Overhead()
 )
 
-var bufPool = sync.Pool{New: func() interface{} { return make([]byte, bufSize) }}
+var (
+	ErrZeroChunk = errors.New("zero chunk")
+
+	bufPool = sync.Pool{New: func() interface{} { return make([]byte, bufSize) }}
+)
 
 type Writer struct {
 	io.Writer
@@ -32,6 +37,17 @@ func (w *Writer) Write(p []byte) (n int, err error) {
 	nonce := w.nonce[:w.NonceSize()]
 	tag := w.Overhead()
 	off := 2 + tag
+
+	// compatible with snell
+	if len(p) == 0 {
+		buf = buf[:off]
+		buf[0], buf[1] = byte(0), byte(0)
+		w.Seal(buf[:0], nonce, buf[:2], nil)
+		increment(nonce)
+		_, err = w.Writer.Write(buf)
+		return
+	}
+
 	for nr := 0; n < len(p) && err == nil; n += nr {
 		nr = payloadSizeMask
 		if n+nr > len(p) {
@@ -107,6 +123,10 @@ func (r *Reader) read(p []byte) (int, error) {
 
 	// decrypt payload
 	size := (int(p[0])<<8 + int(p[1])) & payloadSizeMask
+	if size == 0 {
+		return 0, ErrZeroChunk
+	}
+
 	p = p[:size+tag]
 	if _, err := io.ReadFull(r.Reader, p); err != nil {
 		return 0, err
