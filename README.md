@@ -2,7 +2,7 @@
 
 A fresh implementation of Shadowsocks in Go.
 
-GoDoc at https://godoc.org/github.com/Dreamacro/go-shadowsocks2/
+GoDoc at https://godoc.org/github.com/ClashDotNetFramework/go-shadowsocks2/
 
 
 ## Features
@@ -15,12 +15,12 @@ GoDoc at https://godoc.org/github.com/Dreamacro/go-shadowsocks2/
 
 ## Install
 
-Pre-built binaries are available from https://github.com/Dreamacro/go-shadowsocks2/releases
+Pre-built binaries are available from https://github.com/ClashDotNetFramework/go-shadowsocks2/releases
 
 You can also build from source:
 
 ```sh
-go get -u -v github.com/Dreamacro/go-shadowsocks2
+go get -u -v github.com/ClashDotNetFramework/go-shadowsocks2
 ```
 
 Requires Go >= 1.10.
@@ -100,13 +100,3 @@ iperf3 -c localhost -p 1090
 ## TODO
 
 - Test coverage
-
-
-## Design Principles
-
-The code base strives to
-
-- be idiomatic Go and well organized;
-- use fewer external dependences as reasonably possible;
-- only include proven modern ciphers;
-

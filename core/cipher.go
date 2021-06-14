@@ -7,7 +7,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/Dreamacro/go-shadowsocks2/shadowaead"
+	"github.com/ClashDotNetFramework/go-shadowsocks2/shadowaead"
 	"github.com/ClashDotNetFramework/go-shadowsocks2/shadowstream"
 )
 
